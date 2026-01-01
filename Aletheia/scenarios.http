@@ -1,0 +1,30 @@
+### 1. [C]REATE Course (Admin: Tony Stark)
+POST http://localhost:8080/api/courses
+Authorization: Basic tony.stark password
+Content-Type: application/json
+
+{
+  "code": "BI-PJC",
+  "name": "Programming in C++",
+  "credits": 6
+}
+
+### 2. [R]EAD Courses (Admin: Tony Stark)
+# Get list of all courses to verify creation
+GET http://localhost:8080/api/courses
+Authorization: Basic tony.stark password
+
+### 3. Enroll Student (Student: Marty McFly)
+# Necessary step to test the Update logic below (Enrolling into Enterprise Architectures, ID 1)
+POST http://localhost:8080/api/enrollments/sections/1
+Authorization: Basic marty.mcfly password
+
+### 4. [U]PDATE Capacity (Admin: Tony Stark)
+# Try to update capacity. Logic check: cannot be lower than enrolled students (Expects 409 Conflict)
+PATCH http://localhost:8080/api/courses/sections/1/capacity?capacity=0
+Authorization: Basic tony.stark password
+
+### 5. [D]ELETE Course (Admin: Tony Stark)
+# Delete the course created in step 1 (Assuming ID 2). If 404, check DB for correct ID.
+DELETE http://localhost:8080/api/courses/2
+Authorization: Basic tony.stark password
