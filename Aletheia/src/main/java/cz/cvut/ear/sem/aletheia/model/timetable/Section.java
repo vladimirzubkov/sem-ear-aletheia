@@ -1,31 +1,51 @@
 package cz.cvut.ear.sem.aletheia.model.timetable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import cz.cvut.ear.sem.aletheia.model.enrollment.Enrollment;
 import cz.cvut.ear.sem.aletheia.model.enrollment.SectionTimeSlot;
-import cz.cvut.ear.sem.aletheia.model.entities.AbstractEntity;
 import cz.cvut.ear.sem.aletheia.model.users.Teacher;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Abstract base class for all section types (LectureSection, SeminarSection).
- * Contains common fields and helper methods for capacity check and enrollment management.
- */
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
-@Table(name = "section")
 @Getter
-@NoArgsConstructor
-@ToString(exclude = {"teachers", "enrollments", "timeSlots"})
-public abstract class Section extends AbstractEntity {
+@Setter
+public abstract class Section {
 
-    @Column(nullable = false)
-    private int capacity = 30;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Integer capacity;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private java.time.LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = java.time.LocalDateTime.now();
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
+    }
+
+    @OneToMany(mappedBy = "section")
+    @JsonIgnore // Prevents infinite recursion
+    private List<Enrollment> enrollments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL)
+    private List<SectionTimeSlot> timeSlots = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
@@ -33,31 +53,13 @@ public abstract class Section extends AbstractEntity {
             joinColumns = @JoinColumn(name = "section_id"),
             inverseJoinColumns = @JoinColumn(name = "teacher_id")
     )
-    private Set<Teacher> teachers = new HashSet<>();
+    private List<Teacher> teachers = new ArrayList<>();
 
-    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Enrollment> enrollments = new HashSet<>();
-
-    @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<SectionTimeSlot> timeSlots = new HashSet<>();
-
-    /** Returns true if current enrollment count reached capacity. */
+    /**
+     * Checks if the section has reached its capacity.
+     * Used by EnrollmentService.
+     */
     public boolean isFull() {
         return enrollments.size() >= capacity;
-    }
-
-    /** Returns number of remaining free places. */
-    public int getFreeSlots() {
-        return capacity - enrollments.size();
-    }
-
-    /** Convenience method to add enrollment with bidirectional link. */
-    public void addEnrollment(Enrollment enrollment) {
-        enrollments.add(enrollment);
-        enrollment.setSection(this);
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
     }
 }

@@ -1,32 +1,23 @@
 package cz.cvut.ear.sem.aletheia.model.users;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import cz.cvut.ear.sem.aletheia.model.enrollment.Enrollment;
-import jakarta.persistence.*;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Student entity.
- * Holds bidirectional OneToMany relationship with Enrollment.
- * Provides convenience method for safe enrollment addition.
- */
 @Entity
-@Table(name = "student")
+@DiscriminatorValue("STUDENT")
 @Getter
-@NoArgsConstructor
+@Setter
 public class Student extends AbstractUser {
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Enrollment> enrollments = new HashSet<>();
-
-    /**
-     * Adds an enrollment and maintains bidirectional consistency.
-     */
-    public void addEnrollment(Enrollment enrollment) {
-        enrollments.add(enrollment);
-        enrollment.setStudent(this);
-    }
+    @OneToMany(mappedBy = "student")
+    @JsonIgnore // Prevents infinite recursion: Student -> Enrollment -> Student
+    private List<Enrollment> enrollments = new ArrayList<>();
 }

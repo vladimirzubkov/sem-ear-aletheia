@@ -18,7 +18,7 @@ import java.util.Objects;
  * Service responsible for student enrollment logic.
  * Enforces business rules:
  * - Section capacity
- * - Time slot conflicts (ANY overlap: lecture-lecture, lecture-seminar, seminar-seminar)
+ * - Time slot conflicts
  * - One lecture per course
  * - Bidirectional relationship consistency
  */
@@ -31,18 +31,11 @@ public class EnrollmentService {
     private final SectionRepository sectionRepo;
     private final CourseRepository courseRepo;
 
-    /**
-     * Enrolls a student in a section with full validation.
-     *
-     * @param student the student to enroll
-     * @param section the target section (lecture or seminar)
-     * @throws IllegalStateException if any rule is violated
-     */
     public void enrollStudent(Student student, Section section) {
         Objects.requireNonNull(student, "Student cannot be null");
         Objects.requireNonNull(section, "Section cannot be null");
 
-        // 1. Check if section is full
+        // 1. Check Capacity
         if (section.isFull()) {
             throw new IllegalStateException("Section is full (ID: %d)".formatted(section.getId()));
         }
@@ -52,7 +45,7 @@ public class EnrollmentService {
             throw new IllegalStateException("Student already enrolled in this section");
         }
 
-        // 3. Check for ANY time conflict with existing enrollments
+        // 3. Check for Time Conflicts (Checks against in-memory list)
         if (hasTimeCollision(student, section)) {
             throw new IllegalStateException("Time conflict with existing enrollment");
         }
@@ -72,23 +65,17 @@ public class EnrollmentService {
             }
         }
 
-        // 5. Create enrollment with bidirectional consistency
+        // 5. Create enrollment
         Enrollment enrollment = new Enrollment();
+        // ATTENTION: Setters setStudent/setSection in the Entity ALREADY add enrollment to the lists!
         enrollment.setStudent(student);
         enrollment.setSection(section);
         enrollment.setEnrolledAt(LocalDateTime.now());
 
-        // Maintain bidirectional relationships
-        student.getEnrollments().add(enrollment);
-        section.getEnrollments().add(enrollment);
-
         enrollmentRepo.save(enrollment);
+
     }
 
-    /**
-     * Checks for any time conflict using clean, lazy Stream API.
-     * Stops at the first overlap — production-ready and fast.
-     */
     private boolean hasTimeCollision(Student student, Section newSection) {
         return student.getEnrollments().stream()
                 .flatMap(e -> e.getSection().getTimeSlots().stream())
@@ -97,9 +84,6 @@ public class EnrollmentService {
                 );
     }
 
-    /**
-     * Checks if two time slots overlap on the same day.
-     */
     private boolean slotsOverlap(SectionTimeSlot a, SectionTimeSlot b) {
         TimeSlot t1 = a.getTimeSlot();
         TimeSlot t2 = b.getTimeSlot();
@@ -108,16 +92,11 @@ public class EnrollmentService {
             return false;
         }
 
-        // [start1, end1] overlaps with [start2, end2]
-        return !t1.getEndTime().isBefore(t2.getStartTime())
-                && !t2.getEndTime().isBefore(t1.getStartTime());
+        // Strict overlap check: (StartA < EndB) and (EndA > StartB)
+        return t1.getStartTime().isBefore(t2.getEndTime()) &&
+                t1.getEndTime().isAfter(t2.getStartTime());
     }
 
-    /**
-     * Safely retrieves the course associated with a lecture section.
-     *
-     * @throws IllegalStateException if lecture is not linked to any course
-     */
     private Course findCourseByLecture(LectureSection lecture) {
         Course course = courseRepo.findByLecture(lecture);
         if (course == null) {
