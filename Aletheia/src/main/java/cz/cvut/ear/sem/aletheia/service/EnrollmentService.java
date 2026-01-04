@@ -3,11 +3,12 @@ package cz.cvut.ear.sem.aletheia.service;
 import cz.cvut.ear.sem.aletheia.dao.CourseRepository;
 import cz.cvut.ear.sem.aletheia.dao.EnrollmentRepository;
 import cz.cvut.ear.sem.aletheia.dao.SectionRepository;
+import cz.cvut.ear.sem.aletheia.dao.UserRepository; // Added this import
 import cz.cvut.ear.sem.aletheia.model.enrollment.Enrollment;
 import cz.cvut.ear.sem.aletheia.model.enrollment.SectionTimeSlot;
 import cz.cvut.ear.sem.aletheia.model.timetable.*;
 import cz.cvut.ear.sem.aletheia.model.users.Student;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +17,6 @@ import java.util.Objects;
 
 /**
  * Service responsible for student enrollment logic.
- * Enforces business rules:
- * - Section capacity
- * - Time slot conflicts
- * - One lecture per course
- * - Bidirectional relationship consistency
  */
 @Service
 @RequiredArgsConstructor
@@ -30,7 +26,26 @@ public class EnrollmentService {
     private final EnrollmentRepository enrollmentRepo;
     private final SectionRepository sectionRepo;
     private final CourseRepository courseRepo;
+    private final UserRepository userRepo; // Injected to find student
 
+    /**
+     * Facade method for controllers. Finds entities by ID/Username and delegates to logic.
+     * * @param username The username of the student
+     * @param sectionId The ID of the section
+     */
+    public void enroll(String username, Long sectionId) {
+        Section section = sectionRepo.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Section %d not found".formatted(sectionId)));
+
+        Student student = userRepo.findStudentByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Student not found: " + username));
+
+        enrollStudent(student, section);
+    }
+
+    /**
+     * Core business logic for enrollment.
+     */
     public void enrollStudent(Student student, Section section) {
         Objects.requireNonNull(student, "Student cannot be null");
         Objects.requireNonNull(section, "Section cannot be null");
@@ -45,7 +60,7 @@ public class EnrollmentService {
             throw new IllegalStateException("Student already enrolled in this section");
         }
 
-        // 3. Check for Time Conflicts (Checks against in-memory list)
+        // 3. Check for Time Conflicts
         if (hasTimeCollision(student, section)) {
             throw new IllegalStateException("Time conflict with existing enrollment");
         }
@@ -67,14 +82,14 @@ public class EnrollmentService {
 
         // 5. Create enrollment
         Enrollment enrollment = new Enrollment();
-        // ATTENTION: Setters setStudent/setSection in the Entity ALREADY add enrollment to the lists!
         enrollment.setStudent(student);
         enrollment.setSection(section);
         enrollment.setEnrolledAt(LocalDateTime.now());
 
         enrollmentRepo.save(enrollment);
-
     }
+
+    // the rest of private methods: hasTimeCollision, slotsOverlap, findCourseByLecture
 
     private boolean hasTimeCollision(Student student, Section newSection) {
         return student.getEnrollments().stream()
@@ -91,8 +106,6 @@ public class EnrollmentService {
         if (!t1.getDayOfWeek().equals(t2.getDayOfWeek())) {
             return false;
         }
-
-        // Strict overlap check: (StartA < EndB) and (EndA > StartB)
         return t1.getStartTime().isBefore(t2.getEndTime()) &&
                 t1.getEndTime().isAfter(t2.getStartTime());
     }

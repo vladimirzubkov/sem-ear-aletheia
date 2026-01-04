@@ -1,6 +1,7 @@
 package cz.cvut.ear.sem.aletheia.model.enrollment;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import cz.cvut.ear.sem.aletheia.model.entities.AbstractEntity;
 import cz.cvut.ear.sem.aletheia.model.timetable.Section;
 import cz.cvut.ear.sem.aletheia.model.timetable.TimeSlot;
 import jakarta.persistence.*;
@@ -10,11 +11,7 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-public class SectionTimeSlot {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class SectionTimeSlot extends AbstractEntity {
 
     @ManyToOne
     @JoinColumn(name = "section_id", nullable = false)

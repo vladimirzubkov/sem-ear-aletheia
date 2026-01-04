@@ -15,7 +15,7 @@ import org.hibernate.annotations.NaturalId;
 @Table(name = "app_user")
 @Getter
 @Setter
-@EqualsAndHashCode(callSuper = true, of = {"username", "email"})
+// REMOVED @EqualsAndHashCode(callSuper = true, of = {"username", "email"}) -> Conflict with final method in parent
 @ToString(callSuper = true, exclude = "passwordHash")
 public abstract class AbstractUser extends AbstractEntity {
 

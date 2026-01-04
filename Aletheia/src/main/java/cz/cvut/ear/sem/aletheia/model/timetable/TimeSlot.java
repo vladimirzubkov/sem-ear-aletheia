@@ -16,7 +16,7 @@ import java.time.LocalTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@EqualsAndHashCode(callSuper = true, of = {"dayOfWeek", "startTime", "endTime"})
+// REMOVED @EqualsAndHashCode(callSuper = true, of = {"dayOfWeek", "startTime", "endTime"}) -> Conflict with final method in parent
 @ToString(callSuper = true)
 public class TimeSlot extends AbstractEntity {
 
