@@ -1,0 +1,123 @@
+@startuml data_entity_diagram_cp2
+' Fyzický datový model pro Strategy JOINED
+
+skinparam monochrome false
+skinparam linetype polyline
+skinparam nodesep 40          
+skinparam ranksep 30          
+
+
+' --- USERS (JOINED INHERITANCE) ---
+entity "app_user" <<tableBase>> {
+  * id : BIGINT <<PK>>
+  --
+  username : VARCHAR <<unique>>
+  password_hash : VARCHAR
+  first_name : VARCHAR
+  last_name : VARCHAR
+  email : VARCHAR <<unique>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "student" <<tableSub>> {
+  * id : BIGINT <<PK,FK>>
+}
+
+entity "teacher" <<tableSub>> {
+  * id : BIGINT <<PK,FK>>
+}
+
+entity "admin_user" <<tableSub>> {
+  * id : BIGINT <<PK,FK>>
+}
+
+entity "super_admin" <<tableSub>> {
+  * id : BIGINT <<PK,FK>>
+}
+
+' --- TIMETABLE ---
+entity "course" <<table>> {
+  * id : BIGINT <<PK>>
+  --
+  code : VARCHAR <<unique>>
+  name : VARCHAR
+  credits : INTEGER
+  lecture_id : BIGINT <<FK>>
+}
+
+entity "section" <<tableBase>> {
+  * id : BIGINT <<PK>>
+  --
+  capacity : INTEGER
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "lecture_section" <<tableSub>> {
+  * id : BIGINT <<PK,FK>>
+}
+
+entity "seminar_section" <<tableSub>> {
+  * id : BIGINT <<PK,FK>>
+  --
+  course_id : BIGINT <<FK>>
+}
+
+entity "time_slot" <<table>> {
+  * id : BIGINT <<PK>>
+  --
+  day_of_week : VARCHAR
+  start_time : TIME
+  end_time : TIME
+}
+
+' --- JOIN / RELATION TABLES ---
+
+entity "enrollment" <<table>> {
+  * id : BIGINT <<PK>>
+  --
+  student_id : BIGINT <<FK>>
+  section_id : BIGINT <<FK>>
+  enrolled_at : TIMESTAMP
+}
+
+entity "section_time_slot" <<table>> {
+  * id : BIGINT <<PK>>
+  --
+  section_id : BIGINT <<FK>>
+  time_slot_id : BIGINT <<FK>>
+  room : VARCHAR
+}
+
+entity "section_teacher" <<junction>> {
+  * section_id : BIGINT <<PK,FK>>
+  * teacher_id : BIGINT <<PK,FK>>
+}
+
+' --- RELATIONS ---
+
+' Inheritance Users
+app_user ||..|| student : "1:1 (joined)"
+app_user ||..|| teacher : "1:1 (joined)"
+app_user ||..|| admin_user : "1:1 (joined)"
+app_user ||..|| super_admin : "1:1 (joined)"
+
+' Inheritance Sections
+section ||..|| lecture_section : "1:1 (joined)"
+section ||..|| seminar_section : "1:1 (joined)"
+
+' Logic
+course ||--|| lecture_section : "1:1"
+course ||--o{ seminar_section : "1:N"
+
+student ||--o{ enrollment : "has"
+section ||--o{ enrollment : "has"
+
+section ||--o{ section_time_slot : "has"
+time_slot ||--o{ section_time_slot : "used in"
+
+section ||--o{ section_teacher : "taught by"
+teacher ||--o{ section_teacher : "teaches"
+
+@enduml

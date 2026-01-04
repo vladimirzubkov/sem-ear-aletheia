@@ -1,0 +1,54 @@
+@startuml use_case_diagram_cp2
+
+left to right direction
+skinparam monochrome false
+skinparam shadowing false
+
+actor "Administrátor" as admin
+actor "Vyučující" as teacher
+actor "Student" as student
+
+rectangle "Systém Aletheia (CP2 Scope)" {
+
+  usecase "Přihlášení (DB Auth)" as login
+
+  ' Administrátor
+  usecase "CRUD Kurzů a Sekcí" as manage_courses
+  usecase "Nastavení kapacit" as set_capacity
+  usecase "Přiřazení učitelů (v kódu)" as assign_teachers
+
+  ' Student
+  usecase "Prohlížení kurzů" as browse_courses
+  usecase "Zápis do sekce (Enroll)" as enroll
+  usecase "Zobrazení rozvrhu (My Enrollments)" as view_schedule
+
+  ' Validace (Business Logic)
+  usecase "Kontrola kolizí a kapacit" as validation
+}
+
+' Přihlášení
+admin --> login
+teacher --> login
+student --> login
+
+' Administrátor
+admin --> manage_courses
+admin --> set_capacity
+admin --> assign_teachers
+
+' Student
+student --> browse_courses
+student --> enroll
+student --> view_schedule
+
+' Validace je součástí procesu
+enroll ..> validation : <<include>>
+
+note right of validation
+  Automaticky při zápisu:
+  - Kapacita
+  - Time Conflict
+  - Duplicity
+end note
+
+@enduml

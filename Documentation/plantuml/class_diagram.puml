@@ -1,0 +1,102 @@
+@startuml class_diagram_cp2
+
+' --- Styl ---
+skinparam monochrome false
+skinparam shadowing false
+skinparam linetype ortho            ' polyline      
+skinparam classAttributeIconSize 1  
+skinparam nodesep 50                
+skinparam ranksep 50                
+
+abstract class AbstractEntity {
+  +Long id
+  +LocalDateTime createdAt
+  +LocalDateTime updatedAt
+}
+
+abstract class AbstractUser {
+  @NaturalId String username
+  String passwordHash
+  String firstName
+  String lastName
+  @NaturalId String email
+}
+
+' Realizace dědičnosti v kódu
+class Student extends AbstractUser {
+  List<Enrollment> enrollments
+}
+class Teacher extends AbstractUser {
+  List<Section> sections
+}
+class Admin extends AbstractUser
+class SuperAdmin extends AbstractUser
+
+abstract class Section {
+  Integer capacity
+  List<Teacher> teachers
+  List<Enrollment> enrollments
+  List<SectionTimeSlot> timeSlots
+  --
+  +isFull() : boolean
+}
+
+class LectureSection extends Section
+class SeminarSection extends Section {
+  Course course
+}
+
+class Course {
+  String code
+  String name
+  int credits
+  LectureSection lecture
+  Set<SeminarSection> seminars
+}
+
+class TimeSlot {
+  DayOfWeek dayOfWeek
+  LocalTime startTime
+  LocalTime endTime
+}
+
+class Enrollment {
+  Student student
+  Section section
+  LocalDateTime enrolledAt
+}
+
+class SectionTimeSlot {
+  Section section
+  TimeSlot timeSlot
+  String room
+}
+
+' Inheritance linkage
+AbstractEntity <|-- AbstractUser
+AbstractEntity <|-- Course
+AbstractEntity <|-- Section
+AbstractEntity <|-- TimeSlot
+AbstractEntity <|-- Enrollment
+AbstractEntity <|-- SectionTimeSlot
+
+' Associations matches Java Code
+Course "1" *--> "1" LectureSection : lecture (OneToOne)
+Course "1" *--> "0..*" SeminarSection : seminars (OneToMany)
+
+Section "1" o--> "0..*" Teacher : teachers (ManyToMany)
+Section "1" *--> "0..*" SectionTimeSlot : timeSlots (OneToMany)
+
+Enrollment "0..*" --> "1" Student : student
+Enrollment "0..*" --> "1" Section : section
+
+Student "1" --> "0..*" Enrollment : enrollments
+
+SectionTimeSlot --> "1" TimeSlot : timeSlot
+
+note top of LectureSection
+  V kódu CP2: Vazba 1:1
+  Course má právě jednu Lecture
+end note
+
+@enduml

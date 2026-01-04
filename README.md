@@ -1,209 +1,146 @@
-# Předmět: B6B36EAR – Enterprise architektury
+# Semestrální práce B6B36EAR – Aletheia
 
-### Specifikace softwarových požadavků (Software Requirements Specification – SRS)
-
-#### Projekt: Aletheia – systém pro rozvrhování univerzitních kurzů
-
-**Fakulta:** FEL ČVUT v Praze
-
-**Vedoucí projektu:** Ing. Martin Řimnáč, Ph.D.
-
-**Student:** Vladimir Zubkov
-
-**Datum:** 9. listopadu 2025
-
-**Verze:** 0.95
+**Autor:** Vladimir Zubkov
+**Předmět:** B6B36EAR – Enterprise architektury
+**Projekt:** Aletheia – systém pro rozvrhování univerzitních kurzů
+**Dokumentace:** [Aletheia_SRS.pdf](Documentation/Aletheia_SRS.pdf), aktualizované diagramy
 
 ---
 
-### 1. Úvod
+## 1. Popis aplikace a její struktury
 
-#### 1.1 Účel (Purpose)
+Aletheia je backendová webová aplikace postavená na frameworku **Spring Boot**, která slouží k plánování a správě univerzitních rozvrhů. Systém umožňuje administrátorům vytvářet kurzy a sekce (přednášky, cvičení), zatímco studenti se mohou zapisovat na konkrétní termíny s automatickou kontrolou kapacit a časových kolizí.
 
-Cílem projektu Aletheia je vytvořit webovou aplikaci, která automaticky vytváří, spravuje a zobrazuje rozvrhy univerzitních kurzů.
-Systém pomáhá rozvrhářům plánovat rozvrh, učitelům i studentům definovat své preference a poskytuje přehled o časech, místnostech a změnách bez nutnosti ručního plánování.
+### Architektura
 
-#### 1.2 Konvence dokumentu (Document Conventions)
+Aplikace dodržuje vrstvenou architekturu s důrazem na oddělení zodpovědností (Separation of Concerns):
 
-CRUD – Create, Read, Update, Delete
-DB – Databáze
-UI – Uživatelské rozhraní
-API – Aplikační programové rozhraní
-SMTP – Simple Mail Transfer Protocol
-
-#### 1.3 Cílové publikum (Intended Audience)
-
-Tento projekt vzniká jako semestrální práce v rámci předmětu. Je určen:
-
-* rozvrhářům – kteří tvoří a upravují rozvrhy,
-* vyučujícím – kteří zadávají své časové preference,
-* studentům – kteří se zapisují do kurzů.
-
-#### 1.4 Rozsah projektu (Project Scope)
-
-Aletheia poskytuje online prostředí pro:
-
-* plánování kurzů, sekcí a místností,
-* správu zápisů studentů,
-* automatické vyhodnocení kolizí a preferencí,
-* informování uživatelů o změnách e-mailem,
-* optimalizaci rozvrhu pomocí solveru.
-
-Cílem je jednoduché, přehledné a spolehlivé rozhraní, které nahradí ruční tvorbu rozvrhů nebo tabulky v Excelu.
-
-#### 1.5 Reference
-
-* Semestrální práce V. Zubkov – *University Timetabling (Scheduling) Problem*
-* IEEE Std 830-1998 – *Software Requirements Specification Standard*
-* Krazytech: *Sample SRS – Airline Database System (2025)*
+* **REST Layer (`rest`):** controller třídy, které přijímají HTTP požadavky, validují vstupy a delegují práci na servisní vrstvu. Využívá se DTO (Data Transfer Objects) pro oddělení API kontraktu od vnitřního datového modelu.
+* **Service Layer (`service`):** obsahuje veškerou business logiku a transakční zpracování (`@Transactional`). Klíčové služby jsou `EnrollmentService` (řešení kolizí, kontrola kapacit) a `CourseService`.
+* **Data Access Layer (`dao`):** rozhraní Repository (Spring Data JPA) pro komunikaci s databází.
+* **Domain Model (`model`):** JPA entity využívající dědičnost (`InheritanceType.JOINED`) pro polymorfní zpracování sekcí (`Section` -> `LectureSection`, `SeminarSection`).
+* **Security (`security`):** implementace Spring Security s vlastní autentifikací (`CustomUserDetailsService`) a autorizací na základě rolí (ADMIN, STUDENT, TEACHER).
 
 ---
 
-### 2. Celkový popis systému (Overall Description)
+## 2. Návod na instalaci a spuštění
 
-#### 2.1 Postavení produktu (Product Perspective)
+Aplikace je připravena ke spuštění v režimech: lokálně s in-memory databází pro testy, se školním Postgres (slon) nebo v kontejneru Docker. Databáze je ve výchozím stavu nastavena na opětovné vytvoření při každém spuštění. Je-li potřeba pouze update, v `main/resources/application.properties` je vhodné změnit `spring.jpa.hibernate.ddl-auto=create` na `update`. Ke spuštění ve Windows kořenovém adresáři projektu jsou spouštěcí `batch` soubory, počínající od `0` a které je vhodné takto postupně spouštět:
 
-Aletheia je webová aplikace s architekturou client–server.
-Na straně serveru běží Java Spring Boot aplikace s databází PostgreSQL, na straně klienta webové rozhraní (např. React nebo Thymeleaf).
-Systém využívá role uživatelů: administrátor, vyučující a student.
+<u>Základní funkčnost aplikace:</u>
 
-#### 2.2 Funkce produktu (Product Features)
+* **0_mvn_clean_package.bat** (`mvn clean package`) - aplikace se zkompiluje, průběžně se zkotrolují unit a integrační testy,
+* **1_start.bat** (`java -jar target/Aletheia-1.0-SNAPSHOT.jar`) - aplikace se spustí,
+* **2_run_scenarios.bat** - spustí se scénáře pro End-to-End testy interakce s databázi, CRUD. Je to stejný jako spuštění soubory **scenarios.http** z Intellij IDEA.
 
-* CRUD operace nad kurzy, sekcemi, časovými sloty a místnostmi
-* Zadávání preferencí učitelů a studentů
-* Automatická kontrola kolizí a kapacit
-* Optimalizace rozvrhu pomocí solveru
-* E-mailové notifikace o změnách
-* Export rozvrhu do iCal
-* Statistiky využití místností
+<u>Bonus:</u>
 
-#### 2.3 Typy uživatelů (User Classes and Characteristics)
+* **3_docker.bat** (`docker-compose up --build`) - aplikace se spustí v Dockeru (démon Dockeru musí být spuštěn). Poté lze znovu testovat scénaře z předchozího bodu.
 
-| Role                     | Popis                                    | Technická úroveň |
-| ------------------------ | ---------------------------------------- | ---------------- |
-| Administrátor (Rozvrhář) | Tvoří a spravuje rozvrhy, spouští solver | Pokročilá        |
-| Vyučující (Teacher)      | Zadává preference, sleduje své kurzy     | Střední          |
-| Student                  | Zapisuje se do sekcí a sleduje rozvrh    | Základní         |
+### Prerekvizity
 
-#### 2.4 Provozní prostředí (Operating Environment)
+* Java 17+ (JDK)
+* Maven
+* Docker (volitelné)
 
-Server: Java 21, Spring Boot 3+, PostgreSQL 16
-Klient: Chrome, Firefox, Edge
-Nasazení: Docker, volitelně Kubernetes
+Při startu aplikace třída `GeneratorConfig` automaticky detekuje prázdnou databázi a naplní ji testovacími daty (uživatelé, kurzy, zápisy) .
 
-#### 2.5 Omezení návrhu (Design and Implementation Constraints)
+### Přístup k aplikaci
 
-* Použití Spring Boot frameworku
-* REST API propojuje frontend a backend
-* Optimalizace pomocí OptaPlanner nebo Choco-solver
-* Notifikace přes Spring Mail
-* Maximálně 10 000 studentů a 2 000 sekcí
+* Bude potřeba logování, viz. dole: http://localhost:8080/
+* Kontrola že běží: http://localhost:8080/actuator/health
+* Swagger UI (REST API dokumentace): http://localhost:8080/swagger-ui/index.html, je rovněž dostupné v podobě souboru
+  * JSON: http://localhost:8080/v3/api-docs
+  * YAML: http://localhost:8080/v3/api-docs.yaml
 
-#### 2.6 Předpoklady a závislosti (Assumptions and Dependencies)
+### Přihlašovací údaje (generované)
 
-* SMTP server je dostupný z univerzitní sítě
-* Solver se spouští dávkově (např. v noci)
-* Všichni uživatelé mají univerzitní účet
+* **Admin:** `tony.stark` / `password`
+* **Student:** `marty.mcfly` / `password`
+* **Učitel:** `obiwan.kenobi` / `password`
 
 ---
 
-### 3. Funkční požadavky (Functional Requirements – FRQ)
+## 3. Splnění požadavků CP2
 
-#### 3.1 Správa rozvrhu (Administrator)
+Přehled implementovaných bodů z Checkpoint 2 (rovněž vizte okomentovaný PDF soubor `courses_b6b36ear_cp2....pdf`):
 
-frq-A-01 – Přidávání, úprava a mazání kurzů a jejich sekcí
-frq-A-02 – Nastavení kapacit sekcí a přiřazení učitelů
-frq-A-03 – Definice časových slotů a přiřazení místností
-frq-A-04 – Spuštění optimalizačního solveru a zobrazení výsledků
-frq-A-05 – Odesílání notifikací o změnách rozvrhu učitelům a studentům
+* Pokročilé techniky JPA (min. 3):
+  * **Ordering (`@OrderBy`):** použito v entitě `Course` pro řazení kolekce seminářů podle kapacity (`@OrderBy("capacity DESC")`).
+  * **Named Queries (`@NamedQuery`):** definováno v entitě `Course` pro optimalizované vyhledávání podle kódu předmětu.
+  * **Kaskádní operace (`CascadeType.ALL`):** použito pro vazby `Course` -> `LectureSection` a `Section` -> `TimeSlot`. Smazání kurzu korektně odstraní i jeho sekce (pokud nejsou zapsaní studenti).
+  * **Criteria API:** implementováno v `CourseService` pro dynamické vyhledávání kurzů podle názvu a počtu kreditů.
 
-#### 3.2 Funkce vyučujících (Teacher)
+* Architektura a logika:
+  * **Transakční zpracování:** anotace `@Transactional` na úrovni servisní vrstvy zajišťuje atomicitu operací (zejména při zápisu a tvorbě kurzů)
+  * **Netriviální CRUD:** operace nepracují jen s jednou tabulkou, ale zasahují do provázaných entit (User, Enrollment, Section, Course) s kontrolou integrity.
+  * **Security:** implementována autentizace (DB) a autorizace (Role: ADMIN, STUDENT). Metody API jsou zabezpečeny podle rolí.
 
-frq-T-01 – Nastavení časových preferencí (dostupnost, oblíbené časy)
-frq-T-02 – Zobrazení vlastních sekcí a studentů v nich
-frq-T-03 – Upozornění e-mailem při změně času nebo místnosti
+* Ověření a testování:
+  * **Integrační scénáře:** Soubor `scenarios.http` (a odpovídající `.bat` skript) pokrývá kompletní životní cyklus dat (Create Course -> Read -> Enroll -> Update Capacity -> Delete).
+  * **DataJpaTest:** Unit testy pro `EnrollmentService` ověřují složitou business logiku (překryvy časových slotů, kapacity).
 
-#### 3.3 Funkce studentů (Student)
-
-frq-S-01 – Zobrazení všech kurzů a sekcí s kapacitou
-frq-S-02 – Zápis a odhlášení ze sekce bez kolizí
-frq-S-03 – Zobrazení a export osobního rozvrhu (např. do iCal)
-
----
-
-### 4. Nefunkční požadavky (Non-Functional Requirements – NFRQ)
-
-#### 4.1 Kvalita a pravidla rozvrhu
-
-nfrq-Q-01 – Žádný učitel nebo student nesmí mít kolidující sekce (hard constraint)
-nfrq-Q-02 – Kapacita sekcí nesmí být překročena (hard constraint)
-nfrq-Q-03 – Respektování preferencí učitelů a studentů (soft constraint)
-nfrq-Q-04 – Solver minimalizuje kolize a přesuny (soft constraint)
-
-#### 4.2 Výkon a provoz solveru
-
-nfrq-P-01 – Solver dokončí výpočet do 10 minut pro 1000 sekcí
-nfrq-P-02 – Solver běží dávkově (např. v noci) a ukládá nejlepší řešení
-
-#### 4.3 Spolehlivost a bezpečnost
-
-nfrq-SC-01 – Přihlášení přes univerzitní účet nebo Keycloak
-nfrq-SC-02 – Data chráněna HTTPS a hashováním hesel (BCrypt)
-
-#### 4.4 Použitelnost a rozšiřitelnost
-
-nfrq-U-01 – Webové rozhraní je přehledné, responzivní a v češtině
-nfrq-U-02 – Systém lze snadno rozšířit pro další fakulty nebo univerzity
+* Bonus:
+  * **Docker:** Aplikace je plně kontejnerizována (Dockerfile + docker-compose).
+  * **Swagger UI:** Integrována dokumentace API pomocí SpringDoc.
 
 ---
 
-### 5. Externí rozhraní (External Interface Requirements)
+## 4. Získané zkušenosti a řešení problémů
 
-#### 5.1 Uživatelské rozhraní (User Interface)
+Během vývoje této semestrální práce jsem narazil na několik architektonických výzev, které mi pomohly lépe pochopit principy Enterprise aplikací.
 
-Jednoduché webové prostředí:
+### a) Modelování dědičnosti v JPA vs. Vazba 1:1
 
-* Dashboard s přehledem kurzů a sekcí
-* Kalendářový pohled rozvrhu (FullCalendar.js)
-* Barevné rozlišení předmětů a stavů (volno/plno/kolize)
+Narazil jsem na dilema při návrhu vztahu `Course` a `LectureSection`. Ačkoliv má kurz aktuálně pouze jednu hlavní přednášku (vazba 1:1), rozhodl jsem se neslučovat tyto tabulky do jedné.
 
-#### 5.2 Hardwarové rozhraní (Hardware Interfaces)
+* **Důvod:** využil jsem polymorfismus. `LectureSection` dědí od abstraktní `Section`. To mi umožnilo v `EnrollmentService` pracovat s jakoukoliv sekcí (přednáškou i cvičením) jednotně. Nakonec kurz v budoucnu může mít více sekcí, tj. více přednášek.
+* **Výhoda:** pokud se v budoucnu rozhodne, že kurz bude mít více paralelních přednášek, změna bude triviální (změna na 1:N) bez nutnosti refaktoringu logiky zápisů.
 
-Není potřeba žádný speciální hardware – systém běží v běžném univerzitním prostředí.
+### b) Testování business logiky
 
-#### 5.3 Softwarové rozhraní (Software Interfaces)
+Rozdělil jsem strategii testování na dvě části:
 
-* PostgreSQL 16
-* JavaMail API
-* OptaPlanner nebo Choco Solver
-* REST API mezi frontendem a backendem
+1. **Unit/Integration testy (`EnrollmentServiceTest`):** pro složitou logiku, jako je detekce časových kolizí a "double booking", jsem použil `DataJpaTest`. To mi umožnilo ověřit všechny hraniční stavy.
+2. **API Scénáře (.http / curl):** pro standardní CRUD operace v `CourseService` jsem nepsal unit testy (což by vedlo jen k mockování repository), ale vytvořil jsem integrační scénáře, které ověřují celý průchod systémem od Controlleru až po DB.
 
-#### 5.4 Komunikační rozhraní (Communication Interfaces)
+### c) Spring Security a Role
 
-* HTTPS pro bezpečnou komunikaci
-* SMTP pro e-maily
+Implementace vlastního `UserDetailsService` mi ukázala flexibilitu Spring Security. Místo hardcodovaných uživatelů načítám uživatele z DB a dynamicky jim přiřazuji role na základě toho, jestli je entita instance třídy `Admin`, `Student` nebo `Teacher`. To zjednodušilo správu oprávnění.
+
+### d) Dockerizace
+
+Přidání `Dockerfile` a `docker-compose` v závěrečné fázi se ukázalo jako velmi užitečné pro ověření, že aplikace není závislá na lokálním prostředí mého počítače ("it works on my machine" problém).
+
+### e) Ověření datového modelu (Inheritance JOINED)
+
+Při kontrole fyzického modelu databáze jsem si v praxi ověřil, jak Hibernate mapuje dědičnost strategií `JOINED` do relačních tabulek.
+
+* **Pozorování:** Společná data uživatelů jsou uložena v hlavní tabulce `app_user`. Specifické tabulky rolí (jako `student`, `teacher`) obsahují pouze primární klíč, který slouží zároveň jako cizí klíč odkazující zpět do `app_user`.
+* **Výhoda:** Tímto způsobem nedochází k duplikaci dat (jméno a heslo jsou uloženy jen jednou) ani k plýtvání místem (v hlavní tabulce nejsou prázdné sloupce NULL pro atributy, které daná role nemá).
+
+**Ukázka z reálného exportu databáze:**
+
+*Tabulka `app_user` (společná data `AbstractUser`):*
+
+| id | username | first_name | last_name | email |
+|---:|:---|:---|:---|:---|
+| 3 | obiwan.kenobi | ObiWan | Kenobi | hello.there@jedi.org |
+| 4 | marty.mcfly | Marty | McFly | marty.mcfly@hillvalley.edu |
+
+*Tabulka `student` (podtřída `AbstractUser`):*
+
+| id | (FK -> app_user) |
+|---:|:---|
+| 4 | *(Marty je student)* |
+
+*Tabulka `teacher` (podtřída `AbstractUser`):*
+
+| id | (FK -> app_user) |
+|---:|:---|
+| 3 | *(ObiWan je učitel)* |
+
 
 ---
-
-### 6. Dodatečné informace (Supporting Information)
-
-<div style="page-break-after: always;"></div>
-
-#### 6.1 Diagram případů užití (Use-Case Diagram)
-![Use-Case Diagram](Documentation/use_case_diagram.png)
-
-#### 6.2 Diagram tříd (Class Diagram)
-![Class Diagram – zjednodušená verze](Documentation/class_diagram_simplified.png)
-
-#### 6.3 Diagram datových entit (ERD)
-![Datový model – tabulky a relace](Documentation/data_entity_diagram.png)
-
-#### 6.4 Datový slovník (Data Dictionary)
-Course – kurz  
-Section – konkrétní výuka (přednáška, cvičení)  
-TimeSlot – časový blok  
-Enrollment – zápis studenta  
-
-#### 6.5 Slovníček pojmů (Glossary)
-Hard constraint – pravidlo, které musí být splněno  
-Soft constraint – pravidlo, které zlepšuje řešení, ale není povinné
+Konec dokumentace. Děkuji za pozornost. 
+V Praze dne 4. ledna 2026.
