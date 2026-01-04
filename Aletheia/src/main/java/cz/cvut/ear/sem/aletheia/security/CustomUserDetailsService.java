@@ -23,13 +23,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         AbstractUser appUser = userRepo.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
 
-        // Определяем роль на основе класса сущности
+        // Dynamic role assignment based on entity type
         String role = "USER";
         if (appUser instanceof Admin) role = "ADMIN";
         else if (appUser instanceof Teacher) role = "TEACHER";
         else if (appUser instanceof Student) role = "STUDENT";
 
-        // Возвращаем объект, который понимает Spring Security
+        // Return a UserDetails object that Spring Security understands
         return User.builder()
                 .username(appUser.getUsername())
                 .password(appUser.getPasswordHash())

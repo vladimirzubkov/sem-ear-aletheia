@@ -1,0 +1,13 @@
+services:
+  aletheia-app:
+    # Build the image from the Dockerfile in the current directory
+    build: .
+    container_name: aletheia_container
+    # Map host port 8080 to container port 8080
+    ports:
+      - "8080:8080"
+    # Set environment variables (e.g., active Spring profile)
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+    # Restart policy: restart unless explicitly stopped
+    restart: unless-stopped

@@ -19,11 +19,15 @@ public class CourseService {
     private final SectionRepository sectionRepo;
     private final EntityManager em;
 
+    /**
+     * Creates a new course with a default lecture section.
+     */
     @Transactional
     public Course createCourse(String code, String name, int credits) {
         Course course = new Course();
         course.setCode(code);
         course.setName(name);
+        course.setCredits(credits);
         // Business logic: every course must have a default lecture
         LectureSection lecture = new LectureSection();
         lecture.setCapacity(100);
@@ -31,6 +35,9 @@ public class CourseService {
         return courseRepo.save(course);
     }
 
+    /**
+     * Updates capacity. Throws exception if new capacity is too low.
+     */
     @Transactional
     public void updateSectionCapacity(Long sectionId, int newCapacity) {
         Section section = sectionRepo.findById(sectionId)
@@ -44,6 +51,9 @@ public class CourseService {
         sectionRepo.save(section);
     }
 
+    /**
+     * Deletes course only if there are no active enrollments.
+     */
     @Transactional
     public void deleteCourse(Long id) {
         Course course = courseRepo.findById(id)
@@ -55,6 +65,10 @@ public class CourseService {
         courseRepo.delete(course);
     }
 
+    /**
+     * Searches for courses using Criteria API.
+     * Supports optional filtering by name (partial match) and minimum credits.
+     */
     public List<Course> findCoursesByCriteria(String namePart, Integer minCredits) {
         CriteriaBuilder cb = em.getCriteriaBuilder();
         CriteriaQuery<Course> cq = cb.createQuery(Course.class);

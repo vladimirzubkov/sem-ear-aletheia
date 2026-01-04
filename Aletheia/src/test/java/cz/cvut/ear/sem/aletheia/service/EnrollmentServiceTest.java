@@ -126,18 +126,7 @@ public class EnrollmentServiceTest {
         assertEquals("Student already enrolled in this section", ex.getMessage());
     }
 
-    // 5. Already enrolled in seminar of same course
-    @Test
-    @DisplayName("enrollStudent → already enrolled in seminar of same course → throws IllegalStateException")
-    void enrollStudent_alreadyEnrolledInSeminarOfSameCourse_throwsIllegalStateException() {
-        enrollmentService.enrollStudent(student, seminar1);
-
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> enrollmentService.enrollStudent(student, seminar1));
-        assertEquals("Student already enrolled in this section", ex.getMessage());
-    }
-
-    // 6. Time conflict: seminar overlaps with another seminar
+    // 5. Time conflict: seminar overlaps with another seminar
     @Test
     @DisplayName("enrollStudent → seminar overlaps with another seminar → throws IllegalStateException")
     void enrollStudent_seminarOverlapsWithAnotherSeminar_throwsIllegalStateException() {
@@ -168,7 +157,7 @@ public class EnrollmentServiceTest {
         assertEquals("Time conflict with existing enrollment", ex.getMessage());
     }
 
-    // 7. Time conflict: lecture overlaps with seminar
+    // 6. Time conflict: lecture overlaps with seminar
     @Test
     @DisplayName("enrollStudent → lecture overlaps with seminar → throws IllegalStateException")
     void enrollStudent_lectureOverlapsWithSeminar_throwsIllegalStateException() {
@@ -201,7 +190,7 @@ public class EnrollmentServiceTest {
         assertEquals("Time conflict with existing enrollment", ex.getMessage());
     }
 
-    // 8. Time conflict: any general collision
+    // 7. Time conflict: any general collision
     @Test
     @DisplayName("enrollStudent → time collision with existing enrollment → throws IllegalStateException")
     void enrollStudent_timeCollisionWithExistingEnrollment_throwsIllegalStateException() {
@@ -232,7 +221,7 @@ public class EnrollmentServiceTest {
         assertEquals("Time conflict with existing enrollment", ex.getMessage());
     }
 
-    // 9. Time conflict: two lectures from different courses at the same time
+    // 8. Time conflict: two lectures from different courses at the same time
     @Test
     @DisplayName("enrollStudent → two lectures from different courses at the same time → throws IllegalStateException")
     void enrollStudent_twoLecturesFromDifferentCoursesAtSameTime_throwsIllegalStateException() {
@@ -272,7 +261,7 @@ public class EnrollmentServiceTest {
         assertEquals("Time conflict with existing enrollment", ex.getMessage());
     }
 
-    // 10. Lecture enrollment allows seminars of the same course
+    // 9. Lecture enrollment allows seminars of the same course
     @Test
     @DisplayName("enrollStudent → enrolling in lecture automatically allows all seminars of that course")
     void enrollStudent_enrollInLecture_allowsAllSeminarsOfCourse() {
@@ -296,5 +285,16 @@ public class EnrollmentServiceTest {
         assertDoesNotThrow(() -> enrollmentService.enrollStudent(student, anotherSeminar));
         assertTrue(student.getEnrollments().stream()
                 .anyMatch(e -> e.getSection().equals(anotherSeminar)));
+    }
+
+    // 10. Null inputs
+    @Test
+    @DisplayName("enrollStudent → null input → throws NullPointerException")
+    void enrollStudent_nullInput_throwsException() {
+        assertThrows(NullPointerException.class,
+                () -> enrollmentService.enrollStudent(null, seminar1));
+
+        assertThrows(NullPointerException.class,
+                () -> enrollmentService.enrollStudent(student, null));
     }
 }

@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * Admin (rozvrhář) – manages courses, sections, timetables and regular users.
+ * Admin (Scheduler) – manages courses, sections, timetables and regular users.
  */
 @Entity
 @Table(name = "admin_user")
