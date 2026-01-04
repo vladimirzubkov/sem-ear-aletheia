@@ -1,8 +1,11 @@
 # Semestrální práce B6B36EAR – Aletheia
 
 **Autor:** Vladimir Zubkov
+
 **Předmět:** B6B36EAR – Enterprise architektury
+
 **Projekt:** Aletheia – systém pro rozvrhování univerzitních kurzů
+
 **Dokumentace:** [Aletheia_SRS.pdf](Documentation/Aletheia_SRS.pdf), aktualizované diagramy
 
 ---
@@ -143,4 +146,5 @@ Při kontrole fyzického modelu databáze jsem si v praxi ověřil, jak Hibernat
 
 ---
 Konec dokumentace. Děkuji za pozornost. 
+
 V Praze dne 4. ledna 2026.
