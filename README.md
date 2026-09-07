@@ -1,3 +1,19 @@
+# Aletheia — B6B36EAR semester project
+
+**Spring Boot** backend for university course scheduling: admins manage courses and sections, students enroll with automatic capacity and timetable conflict checks.
+
+**Stack:** Java 21, Spring Boot 3, Spring Data JPA, Spring Security, H2/PostgreSQL, Docker, Swagger (SpringDoc), JUnit.
+
+```bash
+cd Aletheia
+mvn clean package
+java -jar target/Aletheia-1.0-SNAPSHOT.jar
+```
+
+Docs: [Aletheia_SRS.pdf](Documentation/Aletheia_SRS.pdf) · Swagger UI at `/swagger-ui/index.html`
+
+---
+
 # Semestrální práce B6B36EAR – Aletheia
 
 **Autor:** Vladimir Zubkov
